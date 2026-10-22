@@ -1,0 +1,8 @@
+{
+  "name": "cafe-ar",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {"dev": "node node_modules/next/dist/bin/next dev --hostname 0.0.0.0", "build": "node node_modules/next/dist/bin/next build", "start": "node node_modules/next/dist/bin/next start", "typecheck": "node node_modules/typescript/bin/tsc --noEmit"},
+  "dependencies": {"next": "16.2.10", "react": "19.2.4", "react-dom": "19.2.4"},
+  "devDependencies": {"typescript": "5.9.3", "@types/node": "22.19.15", "@types/react": "19.2.14", "@types/react-dom": "19.2.3"}
+}

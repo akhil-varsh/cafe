@@ -1,0 +1,7 @@
+// Local verification helper for this restricted Windows environment.
+const fs=require('node:fs'), path=require('node:path');
+const root='C:/Users/Akhil/npm-global/node_modules/npm/node_modules/';
+const cache=require(root+'cacache'), semver=require(root+'semver'), tar=require(root+'tar');
+(async()=>{const dir='.npm-cache/_cacache',entries=await cache.ls(dir),keys=Object.keys(entries),seen=new Set();
+async function install(name,range){if(seen.has(name))return;seen.add(name);const key=keys.find(k=>k.toLowerCase()===('make-fetch-happen:request-cache:https://registry.npmjs.org/'+name.replace('/','%2f')).toLowerCase());if(!key)return;const meta=JSON.parse((await cache.get(dir,key)).data),v=semver.maxSatisfying(Object.keys(meta.versions),range),p=meta.versions[v];if(!p||p.os&&!p.os.includes('win32')||p.cpu&&!p.cpu.includes('x64'))return;const t=keys.find(k=>k==='make-fetch-happen:request-cache:'+p.dist.tarball);if(!t)return;const file=path.resolve('.npm-cache/package.tgz'),out=path.resolve('node_modules',name);fs.mkdirSync(out,{recursive:true});fs.writeFileSync(file,(await cache.get(dir,t)).data);await tar.x({file,cwd:out,strip:1});for(const [n,r]of Object.entries({...p.dependencies,...p.optionalDependencies}))await install(n,r);}
+const p=JSON.parse(fs.readFileSync('package.json','utf8'));for(const [n,r]of Object.entries({...p.dependencies,...p.devDependencies}))await install(n,r);console.log('Extracted cached packages for local verification.');})();
