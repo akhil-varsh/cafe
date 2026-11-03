@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { type Dish, type Nutrition, categoryIcons, groupByCategory, photo, photoCredit } from '@/lib/menu';
+import { type Dish, type Nutrition, type SectionName, categoryIcons, groupBySection, photo, photoCredit, sectionOf } from '@/lib/menu';
 
 const Viewer = dynamic(() => import('./viewer'), {
   ssr: false,
@@ -31,6 +31,7 @@ function DietMark({ vegetarian, className = '' }: { vegetarian: boolean; classNa
 }
 
 export default function Menu({ dishes, live }: { dishes: Dish[]; live: boolean }) {
+  const [section, setSection] = useState<'all' | SectionName>('all');
   const [category, setCategory] = useState(ALL);
   const [query, setQuery] = useState('');
   const [diet, setDiet] = useState<Diet>('all');
@@ -79,12 +80,25 @@ export default function Menu({ dishes, live }: { dishes: Dish[]; live: boolean }
   const total = cart.reduce((sum, line) => sum + (dishes.find((dish) => dish.id === line.id)?.price || 0) * line.quantity, 0);
   const matchesDiet = (dish: Dish) => diet === 'all' || (diet === 'veg') === dish.vegetarian;
   const dietDishes = dishes.filter(matchesDiet);
-  const categories = groupByCategory(dietDishes).map(({ name, dishes: list }) => ({ name, count: list.length }));
+  const sectionTabs = groupBySection(dietDishes).map((item) => ({ name: item.name, icon: item.icon, tagline: item.tagline, count: item.groups.reduce((sum, group) => sum + group.dishes.length, 0), groups: item.groups.map((group) => ({ name: group.name, count: group.dishes.length })) }));
+  const visibleTabs = sectionTabs.filter((item) => section === 'all' || item.name === section);
   const filtered = dietDishes.filter((dish) =>
+    (section === 'all' || sectionOf(dish.category) === section) &&
     (category === ALL || category === dish.category) &&
-    `${dish.name} ${dish.category} ${dish.ingredients.join(' ')}`.toLowerCase().includes(query.toLowerCase()),
+    `${dish.name} ${dish.category} ${sectionOf(dish.category)} ${dish.ingredients.join(' ')}`.toLowerCase().includes(query.toLowerCase()),
   );
-  const groups = groupByCategory(filtered);
+  const menuSections = groupBySection(filtered);
+  const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  function chooseSection(value: 'all' | SectionName) {
+    setSection(value);
+    setCategory(ALL);
+  }
+
+  function chooseCategory(name: string) {
+    setCategory(name);
+    if (name !== ALL) setSection(sectionOf(name));
+  }
   const specials = dishes.filter((dish) => dish.todays_special);
   const newDishes = dishes.filter((dish) => dish.is_new);
   const rail = highlight === 'special' ? specials : newDishes;
@@ -99,6 +113,7 @@ export default function Menu({ dishes, live }: { dishes: Dish[]; live: boolean }
   function resetFilters() {
     setQuery('');
     setDiet('all');
+    setSection('all');
     setCategory(ALL);
   }
 
@@ -217,17 +232,24 @@ export default function Menu({ dishes, live }: { dishes: Dish[]; live: boolean }
 
       <section id="menu" className="menu-section">
         <div className="section-heading"><div><div className="eyebrow">FRESH PICKS, HAPPY PLATES</div><h2>What are you craving?</h2></div><label className="search"><span>⌕</span><input aria-label="Search dishes or ingredients" placeholder="Find your next favourite…" value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
+        <nav className="section-tabs" aria-label="Menu sections">
+          <button className={section === 'all' ? 'active' : ''} aria-pressed={section === 'all'} onClick={() => chooseSection('all')}><span className="section-icon" aria-hidden="true">✳</span><span><strong>Full menu</strong><small>Everything we make</small></span><b>{dietDishes.length}</b></button>
+          {sectionTabs.map((item) => <button key={item.name} className={section === item.name ? 'active' : ''} aria-pressed={section === item.name} onClick={() => chooseSection(item.name)}><span className="section-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.name}</strong><small>{item.tagline}</small></span><b>{item.count}</b></button>)}
+        </nav>
         <div className="filter-row">
-          <nav className="categories" aria-label="Menu groups">
-            <button className={category === ALL ? 'active' : ''} onClick={() => setCategory(ALL)} aria-pressed={category === ALL}>{ALL} <small>{dietDishes.length}</small></button>
-            {categories.map((item) => <button key={item.name} className={category === item.name ? 'active' : ''} onClick={() => setCategory(item.name)} aria-pressed={category === item.name}><span aria-hidden="true">{categoryIcons[item.name] || '•'}</span> {item.name} <small>{item.count}</small></button>)}
+          <nav className="categories" aria-label="Sub-categories">
+            <button className={category === ALL ? 'active' : ''} onClick={() => chooseCategory(ALL)} aria-pressed={category === ALL}>All {section === 'all' ? 'dishes' : section} <small>{visibleTabs.reduce((sum, item) => sum + item.count, 0)}</small></button>
+            {visibleTabs.map((item) => <span className="category-set" key={item.name}>{section === 'all' && <span className="category-label">{item.name}</span>}{item.groups.map((group) => <button key={group.name} className={category === group.name ? 'active' : ''} onClick={() => chooseCategory(group.name)} aria-pressed={category === group.name}><span aria-hidden="true">{categoryIcons[group.name] || '•'}</span> {group.name} <small>{group.count}</small></button>)}</span>)}
           </nav>
           <div className="diet-switch" role="radiogroup" aria-label="Dietary preference">{diets.map((item) => <button key={item.value} role="radio" aria-checked={diet === item.value} className={diet === item.value ? 'active' : ''} onClick={() => chooseDiet(item.value)}>{item.value !== 'all' && <DietMark vegetarian={item.value === 'veg'} />}{item.label}</button>)}</div>
         </div>
         <div className="menu-meta"><span>{filtered.length} dishes to fall for{diet !== 'all' && ` · ${diet === 'veg' ? 'vegetarian' : 'non-vegetarian'} only`}</span><span>Prices in INR · {live ? 'Live menu' : 'Demo menu'}</span></div>
-        {groups.map((group) => <section className="menu-group" key={group.name} aria-labelledby={`group-${group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
-          <div className="group-heading"><h3 id={`group-${group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}><span aria-hidden="true">{categoryIcons[group.name] || '•'}</span> {group.name}</h3><span>{group.dishes.length} {group.dishes.length === 1 ? 'dish' : 'dishes'} · {group.dishes.filter((dish) => dish.vegetarian).length} veg · {group.dishes.filter((dish) => !dish.vegetarian).length} non-veg</span></div>
-          <div className="dish-grid">{group.dishes.map(card)}</div>
+        {menuSections.map((parent) => <section className="menu-parent" key={parent.name} aria-labelledby={`section-${slug(parent.name)}`}>
+          <div className="parent-heading"><span className="section-icon" aria-hidden="true">{parent.icon}</span><div><h3 id={`section-${slug(parent.name)}`}>{parent.name}</h3><p>{parent.tagline}</p></div><span>{parent.groups.length} {parent.groups.length === 1 ? 'category' : 'categories'} · {parent.groups.reduce((sum, group) => sum + group.dishes.length, 0)} dishes</span></div>
+          {parent.groups.map((group) => <section className="menu-group" key={group.name} aria-labelledby={`group-${slug(group.name)}`}>
+            <div className="group-heading"><h4 id={`group-${slug(group.name)}`}><span aria-hidden="true">{categoryIcons[group.name] || '•'}</span> {group.name}</h4><span>{group.dishes.length} {group.dishes.length === 1 ? 'dish' : 'dishes'} · {group.dishes.filter((dish) => dish.vegetarian).length} veg · {group.dishes.filter((dish) => !dish.vegetarian).length} non-veg</span></div>
+            <div className="dish-grid">{group.dishes.map(card)}</div>
+          </section>)}
         </section>)}
         {!filtered.length && <div className="empty"><h3>No dishes found.</h3><p>Try another ingredient or explore the full menu.</p><button className="primary" onClick={resetFilters}>Show all dishes</button></div>}
       </section>

@@ -6,6 +6,7 @@ mkdirSync('public/models',{recursive:true});
 const TAU=Math.PI*2;
 
 /* ---------- primitive geometry (unit-ish, local space) ---------- */
+// All faces wind counter-clockwise seen from outside. Keep it that way: iOS Quick Look ignores doubleSided.
 // Each primitive returns {pos:number[], idx:number[]}; normals are computed after transforming.
 function sphere(rows=12,cols=20){const pos=[],idx=[];
  for(let y=0;y<=rows;y++){const a=y*Math.PI/rows;for(let x=0;x<=cols;x++){const b=x*TAU/cols;pos.push(Math.sin(a)*Math.cos(b),Math.cos(a),Math.sin(a)*Math.sin(b));}}
@@ -26,10 +27,10 @@ function tube(path,radius,sides=12){const pos=[],idx=[],n=path.length,rad=typeof
  for(let i=0;i<n;i++){const t=norm(sub(path[Math.min(i+1,n-1)],path[Math.max(i-1,0)]));let up=Math.abs(t[1])>.9?[1,0,0]:[0,1,0];const side=norm(cross(t,up)),nrm=cross(side,t),r=rad(i/(n-1));
   for(let j=0;j<=sides;j++){const v=j*TAU/sides,c=Math.cos(v)*r,s=Math.sin(v)*r;pos.push(path[i][0]+side[0]*c+nrm[0]*s,path[i][1]+side[1]*c+nrm[1]*s,path[i][2]+side[2]*c+nrm[2]*s);}}
  for(let i=0;i<n-1;i++)for(let j=0;j<sides;j++){const a=i*(sides+1)+j,b=a+sides+1;idx.push(a,b,a+1,a+1,b,b+1);}
- for(const end of [0,n-1]){const c=pos.length/3;pos.push(...path[end]);for(let j=0;j<sides;j++){const a=end*(sides+1)+j;end?idx.push(c,a,a+1):idx.push(c,a+1,a);}}
+ for(const end of [0,n-1]){const c=pos.length/3;pos.push(...path[end]);for(let j=0;j<sides;j++){const a=end*(sides+1)+j;end?idx.push(c,a+1,a):idx.push(c,a,a+1);}}
  return {pos,idx};}
 function box(){const pos=[],idx=[],f=[[[1,0,0],[0,1,0],[0,0,1]],[[-1,0,0],[0,1,0],[0,0,-1]],[[0,1,0],[0,0,1],[1,0,0]],[[0,-1,0],[0,0,-1],[1,0,0]],[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[-1,0,0],[0,1,0]]];
- for(const [n,u,v] of f){const b=pos.length/3;for(const [a,c] of [[-1,-1],[1,-1],[1,1],[-1,1]])pos.push(...[0,1,2].map(k=>(n[k]+u[k]*a+v[k]*c)*.5));idx.push(b,b+2,b+1,b,b+3,b+2);}return {pos,idx};}
+ for(const [n,u,v] of f){const b=pos.length/3;for(const [a,c] of [[-1,-1],[1,-1],[1,1],[-1,1]])pos.push(...[0,1,2].map(k=>(n[k]+u[k]*a+v[k]*c)*.5));idx.push(b,b+1,b+2,b,b+2,b+3);}return {pos,idx};}
 
 /* ---------- scene parts ---------- */
 const geoCache=new Map();const cached=(key,make)=>{if(!geoCache.has(key))geoCache.set(key,make());return geoCache.get(key);};
@@ -48,7 +49,7 @@ const thali=(r=.15)=>shape(cached('thali',()=>lathe([[0,0],[.9,0],[1,.06],[.98,.
 // Small bowl (katori) with an optional filling surface.
 function bowl(at,r,h,color,fill,{fillLevel=.75,rough=.35,metal=0}={}){const g=cached('bowl',()=>lathe([[0,0],[.62,0],[.66,.04],[1,1],[.93,1],[.58,.1],[0,.1]],36));
  const parts=[shape(g,at,[r,h,r],color,{rough,metal})];
- if(fill){const fr=r*(.6+.33*fillLevel);parts.push(shape(cached('disc',()=>lathe([[0,0],[1,0]],36)),[at[0],at[1]+h*fillLevel,at[2]],[fr,1,fr],fill,{rough:.5}));
+ if(fill){const fr=r*(.6+.33*fillLevel);parts.push(shape(cached('disc',()=>lathe([[1,0],[0,0]],36)),[at[0],at[1]+h*fillLevel,at[2]],[fr,1,fr],fill,{rough:.5}));
   parts.push(ball([at[0],at[1]+h*fillLevel,at[2]],[fr*.98,h*.08,fr*.98],fill,{rough:.5}));}
  return parts;}
 const leaf=(at,s,color=C.green,rot=[0,0,0])=>ball(at,[s,s*.18,s*.5],color,{rot,res:6});
@@ -233,6 +234,64 @@ scenes['pesto-pasta']=()=>{const s=[plate(.13),...bowl([0,.006,0],.09,.05,[.95,.
 scenes['avocado-toast']=()=>{const s=[plate(.14)];for(const [x,r] of [[-.045,.2],[.05,-.15]]){s.push(cube([x,.016,0],[.075,.022,.1],[.78,.55,.28],{rot:[0,r,0],rough:.9}),ball([x,.028,0],[.032,.008,.044],[.55,.68,.25],{rot:[0,r,0],rough:.7}));
  s.push(...Array.from({length:12},()=>ball([x+(rnd()-.5)*.05,.034,(rnd()-.5)*.07],.0018,[.75,.12,.05],{res:4})));}
  s.push(ball([.0,.012,.085],[.02,.01,.012],C.yellow,{rough:.4}));return s;};
+
+// ---- Cafe: hot drinks (cup on saucer with handle)
+function cup({r=.036,h=.05,body=C.white,liquid,top=()=>[],saucer=true}){
+ const base=saucer?.006:0,s=[];
+ if(saucer)s.push(plate(.065,C.white));
+ s.push(shape(cached('cup',()=>lathe([[0,0],[.62,0],[.66,.05],[.9,.45],[1,1],[.93,1],[.6,.12],[0,.12]],36)),[0,base,0],[r,h,r],body,{rough:.25}));
+ const y=base+h*.9;s.push(shape(cached('disc2',()=>lathe([[1,0],[0,0]],36)),[0,y,0],[r*.92,1,r*.92],liquid,{rough:.3}));
+ s.push(ring([r*1.02,base+h*.55,0],h*.24,h*.05,body,{rot:[Math.PI/2,0,0],sides:8,segs:20,rough:.25}));
+ s.push(top(y,r*.92));return s;}
+scenes.cappuccino=()=>cup({liquid:[.62,.42,.26],top:(y,r)=>[ball([0,y,0],[r*.98,.007,r*.98],[.96,.92,.84],{rough:.7}),ball([0,y+.006,0],[r*.35,.002,r*.3],[.68,.46,.28]),...scatter(14,r*.8,(x,z)=>ball([x,y+.0072,z],.0012,[.36,.2,.1],{res:4}))]});
+scenes.americano=()=>cup({h:.06,liquid:[.16,.08,.04],top:(y,r)=>[ball([0,y,0],[r*.98,.0015,r*.98],[.42,.24,.1],{rough:.3})]});
+scenes['hot-chocolate']=()=>cup({r:.042,h:.06,liquid:[.36,.18,.08],top:(y,r)=>[ball([0,y,0],[r*.98,.003,r*.98],[.38,.2,.09],{rough:.35}),...scatter(7,r*.6,(x,z,i)=>cube([x,y+.004,z],[.011,.009,.011],[.99,.97,.95],{rot:[.3*i,i,.2],rough:.9}))]});
+
+// ---- Cafe: cold drinks
+scenes['cold-coffee']=()=>{const s=drink({liquid:[.72,.55,.38],top:y=>[ball([0,y,0],[.036,.008,.036],[.9,.82,.7],{rough:.8}),ball([0,y+.012,0],.017,[.97,.94,.86],{rough:.6}),
+ P(tube(Array.from({length:30},(_,i)=>[Math.cos(i*.5)*.012,y+.022+i*.0002,Math.sin(i*.5)*.012]),.0015,6),[0,0,0],1,[.3,.15,.06],{rough:.2})]});
+ s.push(pipe([[-.012,.03,0],[-.022,.17,.006]],.003,[.15,.15,.16],{rough:.4}));return s;};
+scenes['strawberry-shake']=()=>{const s=drink({liquid:[.96,.64,.7],top:y=>[ball([0,y+.004,0],[.037,.014,.037],[.99,.97,.95],{rough:.8}),shape(cached('swirl',cone),[0,y+.012,0],[.022,.03,.022],[.99,.97,.95],{rough:.8}),
+ shape(cached('berry',()=>lathe([[0,0],[.5,.1],[1,.55],[.85,.85],[0,1]],14)),[.012,y+.03,0],[.011,.016,.011],[.85,.08,.12],{rot:[0,0,Math.PI],rough:.3})]});
+ s.push(pipe([[.014,.03,0],[.026,.18,.006]],.003,[.9,.35,.45],{rough:.4}));return s;};
+
+// ---- Cafe: breakfast, sandwiches and sides
+const tri=()=>cached('tri',()=>lathe([[0,0],[1,0],[1,1],[0,1]],3));
+function sandwichWedge(at,ry,layers,r=.045){const s=[];let y=at[1];for(const [h,color,grow=1] of layers){s.push(shape(tri(),[at[0],y,at[2]],[r*grow,h,r*grow],color,{rot:[0,ry,0],rough:.8}));y+=h;}return s;}
+const bread=[.012,[.86,.62,.32]],toast=[.012,[.74,.46,.18]];
+scenes['cheese-omelette']=()=>[plate(.14),ball([-.02,.014,0],[.075,.014,.042],[.98,.82,.32],{rot:[0,.4,0],rough:.6}),
+ ...Array.from({length:22},()=>{const a=rnd()*TAU,r=Math.sqrt(rnd());return ball([-.02+Math.cos(a)*r*.05,.026,Math.sin(a)*r*.028],[.006,.0015,.005],rnd()<.5?[.8,.55,.15]:[.25,.5,.12],{res:5});}),
+ ...sandwichWedge([.07,.006,-.035],.4,[toast],.04),...sandwichWedge([.075,.006,.04],-.6,[toast],.04),cube([.07,.02,-.035],[.018,.004,.018],[.98,.88,.45])];
+scenes['bombay-sandwich']=()=>{const s=[plate(.14)];[[-.03,-.03,0],[.035,-.025,1.2],[-.025,.035,2.4],[.04,.04,3.4]].forEach(([x,z,ry])=>s.push(...sandwichWedge([x,.006,z],ry,[toast,[.003,C.chutneyGreen,1.02],[.005,[.95,.8,.35]],[.003,C.tomato,1.02],[.003,[.55,.75,.35],1.02],[.002,[.99,.85,.3],1.04],toast])));
+ for(let i=0;i<4;i++)s.push(cube([-.03+i*.006,.04,-.03],[.002,.0008,.04],[.35,.2,.08],{rot:[0,.8,0]}));s.push(...bowl([-.09,.004,.08],.024,.022,C.steel,[.95,.45,.2],{metal:.85,rough:.3}));return s;};
+scenes['club-sandwich']=()=>{const s=[plate(.14)];const layers=[toast,[.008,[.9,.82,.68]],[.003,[.35,.62,.2],1.08],toast,[.004,C.tomato,1.02],[.006,[.98,.95,.85]],[.003,[.35,.62,.2],1.08],toast];
+ for(const [x,z,ry] of [[-.03,0,0],[.04,.01,Math.PI]]){s.push(...sandwichWedge([x,.006,z],ry,layers,.05));s.push(pipe([[x,.02,z],[x,.085,z]],.0012,[.86,.74,.55]),ball([x,.087,z],.0045,[.15,.25,.08]));}
+ s.push(...Array.from({length:10},(_,i)=>cube([-.07+rnd()*.06,.01,.075+rnd()*.03],[.045,.006,.006],[.92,.72,.32],{rot:[0,rnd()*TAU,0]})));return s;};
+scenes['peri-peri-fries']=()=>{const s=[plate(.11),shape(cached('basket',()=>lathe([[0,0],[.7,0],[1,1],[.94,1],[.66,.06],[0,.06]],28)),[0,.006,0],[.05,.08,.05],[.78,.15,.1],{rough:.7})];
+ for(let i=0;i<34;i++){const a=rnd()*TAU,r=.03*Math.sqrt(rnd());s.push(cube([Math.cos(a)*r,.055+rnd()*.015,Math.sin(a)*r],[.0065,.075,.0065],i%4?[.94,.72,.3]:[.88,.48,.2],{rot:[(rnd()-.5)*.6,rnd()*TAU,(rnd()-.5)*.6]}));}
+ s.push(...bowl([.075,.004,.04],.022,.02,C.white,[.95,.35,.12],{rough:.3}));return s;};
+scenes['garlic-bread']=()=>{const s=[shape(cached('oval',()=>lathe([[0,0],[.85,0],[1,.08],[.97,.11],[.82,.04],[0,.04]],44)),[0,0,0],[.18,.1,.11],C.plate,{rough:.35})];
+ for(let i=0;i<4;i++){const x=-.09+i*.06;s.push(ball([x,.016,0],[.028,.012,.04],[.84,.6,.3],{rot:[0,.25,0]}),ball([x,.026,0],[.024,.005,.034],[.98,.88,.55],{rot:[0,.25,0],rough:.5}),...scatter(6,.02,(dx,dz)=>ball([x+dx,.0305,dz*1.4],.0018,[.2,.48,.12],{res:4})));}return s;};
+
+// ---- Cafe: pasta and bakes
+scenes['fettuccine-alfredo']=()=>{const s=[plate(.13),...bowl([0,.006,0],.09,.05,[.95,.94,.9],null)];
+ for(let k=0;k<14;k++){const r0=.012+rnd()*.045,y0=.034+rnd()*.016,a0=rnd()*TAU;s.push(P(tube(Array.from({length:24},(_,i)=>{const a=a0+i*.22,r=r0+Math.sin(i*.5)*.004;return [Math.cos(a)*r,(y0+Math.sin(i*.7+k)*.003)/.5,Math.sin(a)*r];}),.0045,6),[0,0,0],[1,.5,1],[.95,.88,.62],{rough:.45}));}
+ s.push(ball([0,.04,0],[.058,.012,.058],[.97,.92,.76],{rough:.4}),...scatter(24,.05,(x,z,i)=>ball([x,.056,z],i%2?.0015:.0022,i%2?[.15,.15,.12]:[.25,.5,.15],{res:4})));return s;};
+scenes['butter-croissant']=()=>{const path=Array.from({length:26},(_,i)=>{const a=-1.25+i*2.5/25;return [Math.cos(a)*.05-.02,.025,Math.sin(a)*.05];});
+ return [plate(.11),P(tube(path,t=>.004+.02*Math.pow(Math.sin(Math.PI*t),.8),16),[0,0,0],[1,.8,1],[.82,.52,.2],{rough:.5}),
+  ...[.2,.35,.5,.65,.8].map(t=>{const a=-1.25+t*2.5;return ring([Math.cos(a)*.05-.02,.02,Math.sin(a)*.05],(.004+.02*Math.pow(Math.sin(Math.PI*t),.8))*.8-.0012,.0016,[.68,.38,.12],{rot:[Math.PI/2,-a,0],sides:5,segs:20});})];};
+scenes['chocolate-brownie']=()=>[plate(.1),cube([-.012,.021,0],[.055,.03,.055],[.26,.12,.06],{rot:[0,.3,0],rough:.6}),cube([-.012,.037,0],[.053,.003,.053],[.34,.17,.08],{rot:[0,.3,0],rough:.4}),
+ cube([.04,.018,.035],[.04,.024,.04],[.26,.12,.06],{rot:[0,-.4,0],rough:.6}),...Array.from({length:30},()=>ball([-.012+(rnd()-.5)*.045,.0395,(rnd()-.5)*.045],.0012,[.99,.98,.96],{res:4})),
+ ...scatter(5,.03,(x,z,i)=>cube([x-.05,.008,z+.05],[.008,.008,.008],[.3,.14,.07],{rot:[i,i,0]}))];
+scenes['belgian-waffle']=()=>{const s=[plate(.13),cube([0,.018,0],[.11,.022,.11],[.86,.6,.28],{rough:.6})];
+ for(let i=0;i<6;i++){const o=-.0458+i*.0183;s.push(cube([o,.031,0],[.006,.005,.108],[.9,.68,.34]),cube([0,.031,o],[.108,.005,.006],[.9,.68,.34]));}
+ s.push(ball([.02,.04,-.015],[.024,.014,.024],[.99,.97,.94],{rough:.8}),shape(cached('swirl',cone),[.02,.048,-.015],[.016,.02,.016],[.99,.97,.94],{rough:.8}));
+ for(const [x,z,r] of [[-.03,.02,0],[-.015,.035,1],[.035,.03,2],[-.035,-.025,3]])s.push(shape(cached('berry',()=>lathe([[0,0],[.5,.1],[1,.55],[.85,.85],[0,1]],14)),[x,.034,z],[.011,.018,.011],[.85,.08,.12],{rot:[1.3,r,0],rough:.3}));
+ s.push(...Array.from({length:40},()=>ball([(rnd()-.5)*.1,.0345,(rnd()-.5)*.1],.0012,[.99,.99,.99],{res:4})));return s;};
+scenes['baked-cheesecake']=()=>{const w=(y,h,color)=>shape(tri(),[-.01,y,0],[.085,h,.05],color,{rot:[0,0,0],rough:.6});
+ // A tri-prism scaled long in x reads as a cake slice; the tip points along +x.
+ const slice=[w(.006,.008,[.7,.48,.25]),w(.014,.036,[.98,.93,.76]),w(.05,.004,[.62,.08,.18])].map(p=>({...p,scale:[p.scale[0]*1.2,p.scale[1],p.scale[2]*.9]}));
+ return [plate(.11),...slice,...[[-.04,.006,'b'],[-.025,-.014,'r'],[-.035,-.008,'b'],[.0,.004,'r'],[-.05,-.01,'r']].map(([x,z,c])=>ball([x,.06,z],c==='b'?.0045:.0055,c==='b'?[.18,.2,.45]:[.8,.12,.25],{rough:.3})),...scatter(4,.02,(x,z)=>leaf([.07+x,.008,.06+z],.008,C.mint))];};
 
 /* ---------- build ---------- */
 const filters=process.argv.slice(2);

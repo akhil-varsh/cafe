@@ -19,7 +19,7 @@
 /* Today's special / Try something new */
 .highlights{padding:22px 6% 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f3f5ea,var(--paper))}
 .highlight-tabs{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.highlight-tabs button{padding:10px 16px;border-radius:30px;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--paper)}
+.highlight-tabs button{padding:14px 13px;border-radius:30px;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--paper)}
 .highlight-tabs button.active{background:var(--ink);border-color:var(--ink);color:#fff}
 .highlight-tabs button span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:10px;background:var(--lime);color:var(--ink);font-size:10px}
 .highlight-note{margin-left:auto;font-size:11px;color:var(--muted)}
@@ -81,7 +81,7 @@
 .diet-switch{align-self:flex-start}
 }
 @media(max-width:700px){.highlights{padding:16px 6% 18px}
-.highlight-tabs button{font-size:11px;padding:9px 12px}
+.highlight-tabs button{font-size:11px;padding:12px 10px}
 .highlight-card{flex-basis:240px}
 .highlight-card img{width:64px;height:64px}
 .diet-switch button{padding:8px 12px;font-size:11px}
@@ -90,4 +90,45 @@
 .menu-group{margin-bottom:38px}
 .dish-grid{gap:30px}
 .dish-image{height:230px}
+}
+.ar-notice{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);width:min(340px,88%);margin:0;padding:10px 13px;border-radius:12px;background:#faf8f2ee;box-shadow:0 6px 24px #183c3014;font-size:11px;line-height:1.5;text-align:center;color:#4f5a4a}
+@media(max-width:700px){.ar-notice{bottom:96px}
+}
+
+/* Parent sections (Cafe / Indian kitchen) and their sub-categories */
+.section-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:30px}
+.section-tabs button{display:flex;align-items:center;gap:13px;padding:15px 18px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;transition:border-color .2s,background .2s}
+.section-tabs button:hover{border-color:#b9c49a}
+.section-tabs button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.section-tabs strong{display:block;font:600 16px 'Manrope',sans-serif;letter-spacing:-.4px}
+.section-tabs small{display:block;margin-top:3px;font-size:11px;opacity:.65}
+.section-tabs b{margin-left:auto;min-width:30px;height:30px;display:grid;place-items:center;border-radius:15px;background:var(--lime);color:var(--ink);font-size:12px}
+.section-icon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:#eef2e2;color:#5f7a3a;font-size:19px}
+.section-tabs button.active .section-icon{background:#2d5740;color:var(--lime)}
+.filter-row{margin-top:18px}
+.category-set{display:contents}
+.category-label{align-self:center;flex:none;padding:0 4px 0 12px;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#8b9e60;border-left:1px solid var(--line);margin-left:6px}
+.menu-parent{margin-bottom:34px}
+.parent-heading{display:flex;align-items:center;gap:16px;padding:20px 22px;margin:8px 0 28px;border-radius:16px;background:#eaf0dc}
+.parent-heading h3{font-size:30px;font-weight:600;letter-spacing:-1.2px}
+.parent-heading p{font-size:12px;color:#5d6e52;margin-top:3px}
+.parent-heading>span:last-child{margin-left:auto;font-size:11px;color:#5d6e52;white-space:nowrap}
+.parent-heading .section-icon{width:50px;height:50px;font-size:24px;background:#fff}
+.group-heading h4{margin:0;font:600 22px 'Manrope',sans-serif;letter-spacing:-.8px}
+.group-heading h4 span{color:#8b9e60;margin-right:4px}
+@media(max-width:900px){.section-tabs{grid-template-columns:1fr 1fr 1fr;gap:8px}
+.section-tabs button{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}
+.section-tabs small{display:none}
+.section-tabs b{position:absolute;margin:0;right:10px;top:10px;min-width:24px;height:24px;font-size:10px}
+.section-tabs button{position:relative}
+}
+@media(max-width:700px){.section-tabs{margin-top:22px}
+.section-tabs strong{font-size:13px}
+.section-icon{width:32px;height:32px;font-size:15px}
+.parent-heading{padding:14px 16px;gap:12px;margin-bottom:22px}
+.parent-heading h3{font-size:24px}
+.parent-heading>span:last-child{display:none}
+.parent-heading .section-icon{width:40px;height:40px;font-size:19px}
+.group-heading h4{font-size:19px}
+.category-label{display:none}
 }

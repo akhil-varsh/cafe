@@ -14,18 +14,41 @@ export type Dish = {
 
 export const dishes: Dish[] = menuData as Dish[];
 
-/** Display order for menu groups. Categories not listed here are appended alphabetically. */
-export const categoryOrder = ['South Indian', 'North Indian curries', 'Biryani & rice', 'Tandoor & starters', 'Indian street food', 'Burgers', 'Pizza', 'Bowls & plates', 'Indian sweets', 'Sweet treats', 'Coffee & drinks'];
+/**
+ * Two-level menu: a parent section holds ordered sub-categories (the `category` column on each dish).
+ * A category that is not listed here falls into the first section, after the listed ones.
+ */
+export const sections = [
+  { name: 'Cafe', tagline: 'Coffee, bakes and all-day plates', icon: '☕', categories: ['Hot coffee & chocolate', 'Cold coffee & shakes', 'All-day breakfast', 'Sandwiches & sides', 'Burgers', 'Pizza', 'Pasta', 'Bakes & desserts'] },
+  { name: 'Indian kitchen', tagline: 'Regional favourites, made fresh', icon: '❋', categories: ['South Indian', 'North Indian curries', 'Biryani & rice', 'Tandoor & starters', 'Indian street food', 'Indian sweets', 'Chai & lassi'] },
+] as const;
+export type SectionName = (typeof sections)[number]['name'];
+
 export const categoryIcons: Record<string, string> = {
-  'South Indian': '◐', 'North Indian curries': '◉', 'Biryani & rice': '❋', 'Tandoor & starters': '♨', 'Indian street food': '✦',
-  Burgers: '◒', Pizza: '◔', 'Bowls & plates': '◡', 'Indian sweets': '❀', 'Sweet treats': '✿', 'Coffee & drinks': '☕',
+  'Hot coffee & chocolate': '☕', 'Cold coffee & shakes': '❄', 'All-day breakfast': '◐', 'Sandwiches & sides': '◭', Burgers: '◒', Pizza: '◔', Pasta: '∿', 'Bakes & desserts': '✿',
+  'South Indian': '◑', 'North Indian curries': '◉', 'Biryani & rice': '❋', 'Tandoor & starters': '♨', 'Indian street food': '✦', 'Indian sweets': '❀', 'Chai & lassi': '♨',
 };
+
+export function sectionOf(category: string): SectionName {
+  return (sections.find((section) => (section.categories as readonly string[]).includes(category)) || sections[0]).name;
+}
+
+function categoryRank(name: string) {
+  const index = sections.flatMap((section) => [...section.categories] as string[]).indexOf(name);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
 
 export function groupByCategory(items: Dish[]) {
   const groups = new Map<string, Dish[]>();
   for (const dish of items) groups.set(dish.category, [...(groups.get(dish.category) || []), dish]);
-  const rank = (name: string) => { const index = categoryOrder.indexOf(name); return index === -1 ? categoryOrder.length : index; };
-  return [...groups.entries()].sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b)).map(([name, list]) => ({ name, dishes: list }));
+  return [...groups.entries()].sort(([a], [b]) => categoryRank(a) - categoryRank(b) || a.localeCompare(b)).map(([name, list]) => ({ name, dishes: list }));
+}
+
+/** Parent sections, each with its non-empty sub-categories, in menu order. */
+export function groupBySection(items: Dish[]) {
+  return sections
+    .map((section) => ({ ...section, groups: groupByCategory(items.filter((dish) => sectionOf(dish.category) === section.name)) }))
+    .filter((section) => section.groups.length > 0);
 }
 
 /** Accepts either a full image URL (e.g. Wikimedia Commons) or an Unsplash photo id. */
