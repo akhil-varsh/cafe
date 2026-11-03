@@ -19,7 +19,10 @@ Copy `.env.example` to `.env.local` and supply the Supabase project URL and **pu
 - Supabase menu reads with explicit demo-data fallback and an anonymous order Edge Function.
 - Accessible native modal dialogs, a persistent browser-local bag, and transactional order submission.
 - Lazy-loaded model-viewer with 3D controls and native AR handoff on supported devices.
-- Original procedural GLB burger, pizza and pancake assets. Regenerate using `node scripts/generate-models.mjs`.
+- 36-dish menu (South Indian, North Indian curries, biryani, tandoor, street food, Indian sweets, burgers, pizza, drinks) in `src/data/dishes.json`, grouped by category with Veg / Non-veg filtering and FSSAI-style marks.
+- "Today's special" and "Try something new" rails at the top of the menu, driven by `todays_special` / `is_new` (toggle them in `/admin`).
+- Per-serving nutrition estimates (energy, protein, carbs, fat, fibre, sugars, sodium) in each dish dialog.
+- Original procedural GLB models for every dish. Regenerate with `node scripts/generate-models.mjs [name-filter]`; regenerate `supabase/seed.sql` with `node scripts/generate-seed.mjs`.
 - Published-menu RLS and cafe-member-scoped dish mutation policies. No public writes.
 - Table-aware routes such as `/table/7`, which prefill the table during checkout.
 - `/admin` cafe-member sign-in, live order queue, status updates, and price/publication editing. Sessions are kept only in memory; sign in again after reload or expiry.
@@ -31,7 +34,7 @@ Copy `.env.example` to `.env.local` and supply the Supabase project URL and **pu
 
 ## Current limits
 
-This is a cafe pilot prototype. Orders are submitted through the deployed `submit-order` Edge Function with server-calculated live prices and an idempotency token, but payment is handled by the cafe. Admin account provisioning, complete menu editing, abuse/rate limiting, model uploads, QR artwork generation, analytics, and web-app deployment remain to be implemented. No cafe-verified models or nutrition data are claimed.
+This is a cafe pilot prototype. Orders are submitted through the deployed `submit-order` Edge Function with server-calculated live prices and an idempotency token, but payment is handled by the cafe. Admin account provisioning, complete menu editing, abuse/rate limiting, model uploads, QR artwork generation, analytics, and web-app deployment remain to be implemented. No cafe-verified models are claimed. Nutrition values are estimates from standard recipe composition data (ICMR-NIN IFCT 2017, USDA FoodData Central), not lab tests. Indian dish photos are hot-linked from Wikimedia Commons (CC BY-SA; check per-file attribution before production).
 
 The procedural models are illustrative and deliberately labelled. The scale is authored in metres but must be checked on physical Android and iPhone devices before making portion-accuracy claims. Native AR requires HTTPS (ordinary LAN HTTP is not sufficient). iOS model conversion and all platform fallbacks require physical-device QA.
 

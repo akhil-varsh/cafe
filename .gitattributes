@@ -1,0 +1,3 @@
+# 3D models are small (<1 MB each, enforced by scripts/check-models.mjs) and stored in plain git, not LFS.
+*.glb binary
+*.gltf text eol=lf

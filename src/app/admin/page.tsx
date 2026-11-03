@@ -1,20 +1,14 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import menuData from '@/data/dishes.json';
 
-type MenuItem = { id: string; name: string; price: number; published: boolean; cafe_slug: string };
+type MenuItem = { id: string; name: string; price: number; published: boolean; cafe_slug: string; is_new: boolean; todays_special: boolean };
 type OrderItem = { dish_id: string; dish_name: string; quantity: number; unit_price: number; customizations: { no_cheese?: boolean } };
 type Order = { id: string; table_label: string; guest_name: string; notes: string; status: string; total: number; created_at: string; order_items: OrderItem[] };
 
 const statuses = ['received', 'preparing', 'ready', 'completed', 'cancelled'];
-const demoMenu: MenuItem[] = [
-  { id: 'signature-burger', name: 'The Signature Burger', price: 349, published: true, cafe_slug: 'savour' },
-  { id: 'garden-pizza', name: 'Garden Margherita', price: 429, published: true, cafe_slug: 'savour' },
-  { id: 'pancakes', name: 'Sunday Pancakes', price: 289, published: true, cafe_slug: 'savour' },
-  { id: 'pesto-pasta', name: 'Basil Pesto Pasta', price: 379, published: true, cafe_slug: 'savour' },
-  { id: 'iced-latte', name: 'Slow Morning Latte', price: 199, published: true, cafe_slug: 'savour' },
-  { id: 'avocado-toast', name: 'Avocado on Sourdough', price: 319, published: true, cafe_slug: 'savour' },
-];
+const demoMenu: MenuItem[] = menuData.map(({ id, name, price, is_new, todays_special }) => ({ id, name, price, published: true, cafe_slug: 'savour', is_new, todays_special }));
 const demoOrders: Order[] = [
   { id: '71e634aa-demo-4000-8000-000000000001', table_label: 'Table 7', guest_name: 'Maya', notes: 'Sauce on the side, please.', status: 'received', total: 897, created_at: '2026-10-22T07:40:00.000Z', order_items: [{ dish_id: 'signature-burger', dish_name: 'The Signature Burger', quantity: 2, unit_price: 349, customizations: { no_cheese: false } }, { dish_id: 'iced-latte', dish_name: 'Slow Morning Latte', quantity: 1, unit_price: 199, customizations: {} }] },
   { id: '84f957bc-demo-4000-8000-000000000002', table_label: 'Table 3', guest_name: 'Aarav', notes: '', status: 'preparing', total: 718, created_at: '2026-10-22T07:32:00.000Z', order_items: [{ dish_id: 'garden-pizza', dish_name: 'Garden Margherita', quantity: 1, unit_price: 429, customizations: { no_cheese: true } }, { dish_id: 'pancakes', dish_name: 'Sunday Pancakes', quantity: 1, unit_price: 289, customizations: {} }] },
@@ -42,7 +36,7 @@ export default function Admin() {
   async function loadWorkspace(accessToken: string, allowed: string[]) {
     const cafeFilter = allowed.map(encodeURIComponent).join(',');
     const [menuResponse, ordersResponse] = await Promise.all([
-      fetch(`${url}/rest/v1/dishes?select=id,name,price,published,cafe_slug&cafe_slug=in.(${cafeFilter})&order=sort_order`, { headers: headers(accessToken) }),
+      fetch(`${url}/rest/v1/dishes?select=id,name,price,published,cafe_slug,is_new,todays_special&cafe_slug=in.(${cafeFilter})&order=sort_order`, { headers: headers(accessToken) }),
       fetch(`${url}/rest/v1/orders?select=id,table_label,guest_name,notes,status,total,created_at,order_items(dish_id,dish_name,quantity,unit_price,customizations)&cafe_slug=in.(${cafeFilter})&order=created_at.desc&limit=50`, { headers: headers(accessToken) }),
     ]);
     if (!menuResponse.ok || !ordersResponse.ok) throw new Error('Could not load your cafe workspace.');
@@ -89,7 +83,7 @@ export default function Admin() {
     setMessage('');
     try {
       const response = await fetch(`${url}/rest/v1/dishes?id=eq.${encodeURIComponent(item.id)}`, {
-        method: 'PATCH', headers: headers(token, 'return=representation'), body: JSON.stringify({ price: item.price, published: item.published, updated_at: new Date().toISOString() }),
+        method: 'PATCH', headers: headers(token, 'return=representation'), body: JSON.stringify({ price: item.price, published: item.published, is_new: item.is_new, todays_special: item.todays_special, updated_at: new Date().toISOString() }),
       });
       const changed = await response.json();
       if (!response.ok || !changed.length) throw new Error('Save failed. Your session may have expired.');
@@ -180,7 +174,7 @@ export default function Admin() {
             {order.notes && <p className="kitchen-note">“{order.notes}”</p>}
             <label className="status-picker">Order status<select value={order.status} disabled={busy} onChange={(event) => updateStatus(order, event.target.value)}>{statuses.map((status) => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}</select></label>
           </article>)}
-        </section> : <section>{items.map((item) => <form className="admin-row" key={item.id} onSubmit={(event) => { event.preventDefault(); save(item); }}><strong>{item.name}</strong><label>Price · ₹<input aria-label={`Price for ${item.name}`} type="number" min={0} step={1} required value={item.price} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, price: event.target.valueAsNumber } : dish))} /></label><label><input type="checkbox" checked={item.published} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, published: event.target.checked } : dish))} /> Published</label><button className="primary" disabled={busy}>Save</button></form>)}</section>}
+        </section> : <section>{items.map((item) => <form className="admin-row" key={item.id} onSubmit={(event) => { event.preventDefault(); save(item); }}><strong>{item.name}</strong><label>Price · ₹<input aria-label={`Price for ${item.name}`} type="number" min={0} step={1} required value={item.price} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, price: event.target.valueAsNumber } : dish))} /></label><label><input type="checkbox" checked={item.published} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, published: event.target.checked } : dish))} /> Published</label><label><input type="checkbox" checked={item.todays_special} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, todays_special: event.target.checked } : dish))} /> Today’s special</label><label><input type="checkbox" checked={item.is_new} onChange={(event) => setItems((current) => current.map((dish) => dish.id === item.id ? { ...dish, is_new: event.target.checked } : dish))} /> New</label><button className="primary" disabled={busy}>Save</button></form>)}</section>}
       </>}
       <p role="status" className="admin-message">{message}</p>
     </main>

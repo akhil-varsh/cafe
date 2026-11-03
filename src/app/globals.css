@@ -8,3 +8,86 @@
 .model-viewer-element{display:block;width:100%;height:100%;background:#eee9df}.viewer-status,.viewer-error{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:24px;background:#faf8f2e8;box-shadow:0 6px 24px #183c3014;font-size:11px;pointer-events:none}.viewer-status span{width:13px;height:13px;border:2px solid #b8c593;border-top-color:var(--ink);border-radius:50%;animation:viewer-spin .8s linear infinite}.viewer-error{width:min(280px,80%);flex-direction:column;text-align:center;border-radius:12px}.viewer-error span{color:var(--muted);line-height:1.5}@keyframes viewer-spin{to{transform:rotate(360deg)}}
 @media(max-width:700px){.detail-visual{height:420px}.model-viewer-element{min-height:420px}.viewer-status{top:46%}.view-tabs{z-index:3}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}.viewer-status span{animation:none}}
+
+/* Veg / non-veg marks (FSSAI style: green circle = veg, brown triangle = non-veg) */
+.diet-mark{display:inline-grid;place-items:center;flex:none;width:15px;height:15px;border:1.5px solid #3f8a35;border-radius:2px;background:#fff}
+.diet-mark:after{content:'';width:7px;height:7px;border-radius:50%;background:#3f8a35}
+.diet-mark.nonveg{border-color:#8a3b23}
+.diet-mark.nonveg:after{border-radius:0;width:9px;height:8px;background:#8a3b23;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.diet-mark.on-image{position:absolute;right:16px;top:16px;width:19px;height:19px}
+
+/* Today's special / Try something new */
+.highlights{padding:22px 6% 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f3f5ea,var(--paper))}
+.highlight-tabs{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.highlight-tabs button{padding:10px 16px;border-radius:30px;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--paper)}
+.highlight-tabs button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.highlight-tabs button span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:10px;background:var(--lime);color:var(--ink);font-size:10px}
+.highlight-note{margin-left:auto;font-size:11px;color:var(--muted)}
+.highlight-rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:thin}
+.highlight-card{flex:0 0 280px;scroll-snap-align:start;display:flex;gap:12px;align-items:center;padding:8px;border-radius:14px;background:#fff;border:1px solid var(--line);text-align:left;transition:transform .2s,box-shadow .2s}
+.highlight-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px #183c3014}
+.highlight-card img{width:78px;height:78px;border-radius:10px;flex:none}
+.highlight-body{display:grid;gap:5px;min-width:0}
+.highlight-body strong{font:600 14px 'Manrope',sans-serif;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.highlight-kicker{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.highlight-kicker .diet-mark{width:12px;height:12px}
+.highlight-kicker .diet-mark:after{width:5px;height:5px}
+.highlight-kicker .diet-mark.nonveg:after{width:7px;height:6px}
+.highlight-meta{font-size:11px;color:#556c51}
+
+/* Menu groups and filters */
+.categories button small{margin-left:5px;font-size:10px;opacity:.6}
+.diet-switch{display:flex;padding:4px;border:1px solid var(--line);border-radius:30px;gap:2px;flex:none}
+.diet-switch button{display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:24px;font-size:12px}
+.diet-switch button.active{background:var(--ink);color:#fff}
+.diet-switch .diet-mark{width:13px;height:13px}
+.diet-switch .diet-mark:after{width:5px;height:5px}
+.diet-switch .diet-mark.nonveg:after{width:7px;height:6px}
+.menu-group{margin-bottom:54px}
+.group-heading{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding-bottom:14px;margin-bottom:22px;border-bottom:1px dashed var(--line)}
+.group-heading h3{font-size:24px;font-weight:600;letter-spacing:-.8px}
+.group-heading h3 span{color:#8b9e60;margin-right:4px}
+.group-heading>span{font-size:11px;color:var(--muted);white-space:nowrap}
+.dish-bottom b{color:var(--ink);font-weight:600}
+.dish-bottom>span{line-height:1.6;padding-right:8px}
+
+/* Dish detail */
+.detail-content .eyebrow{flex-wrap:wrap;gap:8px}
+.pill{padding:4px 8px;border-radius:12px;font-size:9px;letter-spacing:.6px}
+.pill.special{background:#f6dfb5;color:#7a4a12}
+.pill.new{background:var(--lime)}
+.detail-credit{position:absolute;top:16px;left:16px;z-index:2;padding:5px 9px;border-radius:12px;background:#faf8f2d9;font-size:9px;color:#5d6157}
+.nutrition{margin-top:22px;padding:18px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.nutrition-head{display:flex;justify-content:space-between;align-items:baseline}
+.nutrition-head h4{margin:0}
+.nutrition-head span{font-size:12px;color:var(--muted)}
+.nutrition-head b{font:700 24px 'Manrope',sans-serif;color:var(--ink);letter-spacing:-1px}
+.macro-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:14px 0 8px;gap:2px}
+.macro-bar span,.macro-legend i{display:block;flex-basis:0}
+.protein{background:#5b8a3c}.carbs{background:#e0b04a}.fat{background:#c4683b}
+.macro-legend{display:flex;gap:14px;font-size:10px;color:var(--muted);align-items:center}
+.macro-legend span{display:flex;align-items:center;gap:5px}
+.macro-legend i{width:9px;height:9px;border-radius:2px}
+.macro-legend small{margin-left:auto}
+.nutrition table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.nutrition th{text-align:left;font-weight:500;padding:8px 0;border-top:1px solid #eeeee6}
+.nutrition td{padding:8px 0;border-top:1px solid #eeeee6;text-align:right;white-space:nowrap}
+.nutrition td:last-child{width:120px;color:var(--muted);font-size:11px}
+.daily{display:inline-block;vertical-align:middle;width:62px;height:5px;margin-right:8px;border-radius:3px;background:#eceee3;overflow:hidden}
+.daily span{display:block;height:100%;background:var(--ink)}
+.nutrition-note{font-size:10px!important;line-height:1.6!important;margin-top:12px!important}
+
+@media(max-width:1050px){.highlight-note{display:none}
+.diet-switch{align-self:flex-start}
+}
+@media(max-width:700px){.highlights{padding:16px 6% 18px}
+.highlight-tabs button{font-size:11px;padding:9px 12px}
+.highlight-card{flex-basis:240px}
+.highlight-card img{width:64px;height:64px}
+.diet-switch button{padding:8px 12px;font-size:11px}
+.group-heading{flex-direction:column;gap:4px}
+.group-heading h3{font-size:21px}
+.menu-group{margin-bottom:38px}
+.dish-grid{gap:30px}
+.dish-image{height:230px}
+}

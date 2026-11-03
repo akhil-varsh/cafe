@@ -1,15 +1,63 @@
-export type Dish = { id: string; name: string; category: string; description: string; price: number; image: string; vegetarian: boolean; ingredients: string[]; allergens: string[]; portion: string; preparation: string; model: string | null; tag: string };
-export const dishes: Dish[] = [
- {id:'signature-burger',name:'The Signature Burger',category:'Burgers',description:'Golden brioche. A juicy grilled patty. A little smoky magic.',price:349,image:'photo-1568901346375-23c9450c58cd',vegetarian:false,ingredients:['Brioche bun','Chicken patty','Cheddar','Lettuce','Tomato','House sauce'],allergens:['Wheat','Milk','Egg','Mustard'],portion:'1 burger · approx. 280 g',preparation:'Grilled to order, finished with melted cheddar and our smoky house sauce.',model:'/models/burger.glb',tag:'HOUSE FAVOURITE'},
- {id:'garden-pizza',name:'Garden Margherita',category:'Pizza',description:'Slow-fermented dough, ripe tomatoes and fresh basil.',price:429,image:'photo-1574071318508-1cdbab80d002',vegetarian:true,ingredients:['Pizza dough','Tomato','Mozzarella','Basil','Olive oil'],allergens:['Wheat','Milk'],portion:'1 pizza · approx. 25 cm',preparation:'Hand-stretched and baked until the crust is golden and airy.',model:'/models/pizza.glb',tag:'FRESH FROM THE OVEN'},
- {id:'pancakes',name:'Sunday Pancakes',category:'Sweet treats',description:'A soft, golden eggless stack with berries and maple syrup.',price:289,image:'photo-1528207776546-365bb710ee93',vegetarian:true,ingredients:['Flour','Milk','Baking powder','Butter','Maple syrup','Berries'],allergens:['Wheat','Milk'],portion:'3 pancakes · approx. 240 g',preparation:'Eggless batter, griddled in small batches and served warm.',model:'/models/pancakes.glb',tag:'SOMETHING SWEET'},
- {id:'pesto-pasta',name:'Basil Pesto Pasta',category:'Bowls & plates',description:'Comfort in a bowl, with basil pesto and parmesan.',price:379,image:'photo-1473093295043-cdd812d0e601',vegetarian:true,ingredients:['Pasta','Basil','Pine nuts','Parmesan','Olive oil'],allergens:['Wheat','Milk','Tree nuts'],portion:'1 bowl · approx. 320 g',preparation:'Pasta tossed with fresh pesto. Ask the cafe about cheese suitability.',model:null,tag:'GREEN & GOOD'},
- {id:'iced-latte',name:'Slow Morning Latte',category:'Coffee & drinks',description:'Double espresso over ice, softened with silky milk.',price:199,image:'photo-1461023058943-07fcbe16d735',vegetarian:true,ingredients:['Espresso','Milk','Ice'],allergens:['Milk'],portion:'1 glass · 300 ml',preparation:'Freshly extracted espresso poured over chilled milk and ice.',model:null,tag:'YOUR COFFEE MOMENT'},
- {id:'avocado-toast',name:'Avocado on Sourdough',category:'Bowls & plates',description:'Creamy avocado, toasted sourdough and a bright little kick.',price:319,image:'photo-1541519227354-08fa5d50c44d',vegetarian:true,ingredients:['Sourdough','Avocado','Lemon','Chilli flakes','Olive oil'],allergens:['Wheat'],portion:'2 toasts · approx. 220 g',preparation:'Freshly smashed avocado on toasted sourdough.',model:null,tag:'LIGHT & LOVELY'}
-];
-export const photo = (dish: Dish | undefined, width=800) => `https://images.unsplash.com/${dish?.image || 'photo-1568901346375-23c9450c58cd'}?auto=format&fit=crop&w=${width}&q=85`;
+import menuData from '@/data/dishes.json';
+
+/** Estimated per-serving values: kcal, grams, and milligrams for sodium. */
+export type Nutrition = { calories: number; protein: number; carbs: number; fat: number; fibre: number; sugar: number; sodium: number };
+export type Dish = {
+  id: string; name: string; category: string; description: string; price: number; image: string; vegetarian: boolean;
+  ingredients: string[]; allergens: string[]; portion: string; preparation: string; model: string | null; tag: string;
+  /** Shown in the "Try something new" rail. */
+  is_new: boolean;
+  /** Shown in the "Today's special" rail. */
+  todays_special: boolean;
+  nutrition: Nutrition | null;
+};
+
+export const dishes: Dish[] = menuData as Dish[];
+
+/** Display order for menu groups. Categories not listed here are appended alphabetically. */
+export const categoryOrder = ['South Indian', 'North Indian curries', 'Biryani & rice', 'Tandoor & starters', 'Indian street food', 'Burgers', 'Pizza', 'Bowls & plates', 'Indian sweets', 'Sweet treats', 'Coffee & drinks'];
+export const categoryIcons: Record<string, string> = {
+  'South Indian': '◐', 'North Indian curries': '◉', 'Biryani & rice': '❋', 'Tandoor & starters': '♨', 'Indian street food': '✦',
+  Burgers: '◒', Pizza: '◔', 'Bowls & plates': '◡', 'Indian sweets': '❀', 'Sweet treats': '✿', 'Coffee & drinks': '☕',
+};
+
+export function groupByCategory(items: Dish[]) {
+  const groups = new Map<string, Dish[]>();
+  for (const dish of items) groups.set(dish.category, [...(groups.get(dish.category) || []), dish]);
+  const rank = (name: string) => { const index = categoryOrder.indexOf(name); return index === -1 ? categoryOrder.length : index; };
+  return [...groups.entries()].sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b)).map(([name, list]) => ({ name, dishes: list }));
+}
+
+/** Accepts either a full image URL (e.g. Wikimedia Commons) or an Unsplash photo id. */
+export const photo = (dish: Dish | undefined, width = 800) => {
+  const image = dish?.image || 'photo-1568901346375-23c9450c58cd';
+  return /^https?:\/\//.test(image) ? image : `https://images.unsplash.com/${image}?auto=format&fit=crop&w=${width}&q=85`;
+};
+export const photoCredit = (dish: Dish) => /wikimedia\.org/.test(dish.image) ? 'Photo: Wikimedia Commons contributors (CC BY-SA)' : 'Illustrative photo: Unsplash';
+
+/** Fills fields that an older database row may not have yet (before the highlights/nutrition migration). */
+function normalise(row: Partial<Dish> & { id: string }): Dish {
+  const local = dishes.find((dish) => dish.id === row.id);
+  return {
+    ...(local || {} as Dish),
+    ...row,
+    is_new: row.is_new ?? local?.is_new ?? false,
+    todays_special: row.todays_special ?? local?.todays_special ?? false,
+    nutrition: row.nutrition ?? local?.nutrition ?? null,
+    ingredients: row.ingredients ?? local?.ingredients ?? [],
+    allergens: row.allergens ?? local?.allergens ?? [],
+  } as Dish;
+}
+
 export async function getMenu(): Promise<{items: Dish[]; live: boolean}> {
- const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
- if(!url || !key) return {items:dishes,live:false};
- try {const res=await fetch(`${url}/rest/v1/dishes?select=*&cafe_slug=eq.savour&published=eq.true&order=sort_order`,{headers:{apikey:key},cache:'no-store',signal:AbortSignal.timeout(5000)});if(!res.ok) throw new Error('Menu unavailable');const items=await res.json();return {items,live:true};} catch {return {items:dishes,live:false};}
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return { items: dishes, live: false };
+  try {
+    const res = await fetch(`${url}/rest/v1/dishes?select=*&cafe_slug=eq.savour&published=eq.true&order=sort_order`, { headers: { apikey: key }, cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error('Menu unavailable');
+    const rows: (Partial<Dish> & { id: string })[] = await res.json();
+    return { items: rows.map(normalise), live: true };
+  } catch {
+    return { items: dishes, live: false };
+  }
 }
